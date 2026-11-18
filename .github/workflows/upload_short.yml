@@ -49,6 +49,7 @@ jobs:
 
       - name: Execute Shorts + Video Generation for ${{ matrix.channel }}
         env:
+          CAPTION_BOTTOM_MARGIN: '0.21'
           TWITCH_CLIENT_ID: ${{ secrets.TWITCH_CLIENT_ID }}
           TWITCH_CLIENT_SECRET: ${{ secrets.TWITCH_CLIENT_SECRET }}
           YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
