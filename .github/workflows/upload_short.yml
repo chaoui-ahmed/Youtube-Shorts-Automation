@@ -100,7 +100,7 @@ jobs:
         if: always()
         env:
           BUFFER_API_KEY: ${{ secrets.BUFFER_API_KEY }}
-          YOUTUBE_CHANNEL_ID: ${{ vars.YOUTUBE_CHANNEL_ID }}
+          YOUTUBE_CHANNEL_ID: UCzKa_E3Wz8QjYNEYBOOR8Tw
         run: python tweet_youtube.py || true
 
       - name: Commit & Push Updated History (best-effort, retry on conflict)
