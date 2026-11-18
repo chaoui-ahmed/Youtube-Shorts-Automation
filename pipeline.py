@@ -6,7 +6,7 @@ import argparse
 import logging
 from datetime import datetime, timezone, timedelta
 import config
-from twitch_finder import find_twitch_clips, mark_video_seen as mark_twitch_seen
+from twitch_finder import find_twitch_clips, find_big_streamer_clips, mark_video_seen as mark_twitch_seen
 from twitch_downloader import download_twitch_clip
 from video_finder import find_videos, find_playlist_videos, mark_video_seen as mark_youtube_seen
 from downloader import download_video
@@ -170,7 +170,13 @@ def run_channel_pipeline(channel, default_count=6, default_gap=2):
     videos = []
     if source_type == "twitch":
         target_games = source_config.get("target_games")
-        videos = find_twitch_clips(target_games=target_games)
+        # GTA_IVY: at the configured UTC hours, only use clips from well-known streamers
+        big = source_config.get("big_streamers") or []
+        big_hours = source_config.get("big_streamer_hours_utc") or []
+        if big and (datetime.now(timezone.utc).hour in big_hours or os.getenv("FORCE_BIG_STREAMERS")):
+            videos = find_big_streamer_clips(big, (target_games or ['Grand Theft Auto VI'])[0])
+        if not videos:
+            videos = find_twitch_clips(target_games=target_games)
     elif source_type == "youtube_search" or source_type == "youtube_api":
         query = source_config.get("query", niche)
         max_subs = source_config.get("max_subs", 100000)

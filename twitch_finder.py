@@ -107,6 +107,7 @@ def _collect_unseen(clips, seen, candidates, game_name):
             "broadcaster_name": clip.get("broadcaster_name", ""),
             "vod_id": clip.get("video_id") or "",
             "vod_offset": clip.get("vod_offset"),
+            "view_count": clip.get("view_count", 0),
         })
 
 
@@ -187,7 +188,43 @@ def find_twitch_clips(target_games=None):
         if candidates:
             break
 
-    random.shuffle(candidates)
+    # Most-viewed first (the original code shuffled, which picked random weak clips)
+    candidates.sort(key=lambda c: c.get("view_count", 0), reverse=True)
+    return candidates
+
+
+def find_big_streamer_clips(logins, game_name="Grand Theft Auto VI", hours=48):
+    """GTA_IVY: most-viewed unseen GTA 6 clips from a list of well-known streamers (last `hours`)."""
+    token = get_twitch_access_token()
+    if not token or not logins:
+        return []
+    headers = {"Client-ID": (config.TWITCH_CLIENT_ID or "").strip(), "Authorization": f"Bearer {token}"}
+    seen = get_seen_videos()
+    game_id = get_game_id(game_name, headers)
+    if not game_id:
+        return []
+    users = []
+    for i in range(0, len(logins), 100):
+        q = "&".join(f"login={l}" for l in logins[i:i + 100])
+        try:
+            r = requests.get(f"https://api.twitch.tv/helix/users?{q}", headers=headers, timeout=10)
+            r.raise_for_status()
+            users += r.json().get("data", [])
+        except Exception as e:
+            logging.warning(f"[!] Could not resolve streamer logins: {e}")
+    start = (datetime.now(timezone.utc) - timedelta(hours=hours)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    candidates = []
+    for u in users:
+        try:
+            r = requests.get("https://api.twitch.tv/helix/clips", headers=headers, timeout=10,
+                             params={"broadcaster_id": u["id"], "started_at": start, "first": 50})
+            r.raise_for_status()
+            clips = [c for c in r.json().get("data", []) if c.get("game_id") == game_id]
+            _collect_unseen(clips, seen, candidates, game_name)
+        except Exception as e:
+            logging.warning(f"[!] Clips fetch failed for {u.get('login')}: {e}")
+    candidates.sort(key=lambda c: c.get("view_count", 0), reverse=True)
+    logging.info(f"[+] Big-streamer mode: {len(candidates)} unseen GTA 6 clips from {len(users)} streamers")
     return candidates
 
 if __name__ == "__main__":

@@ -14,6 +14,42 @@
       "source_type": "twitch",
       "target_games": [
         "Grand Theft Auto VI"
+      ],
+      "big_streamers": [
+        "xqc",
+        "kaicenat",
+        "summit1g",
+        "lirik",
+        "moistcr1tikal",
+        "nickmercs",
+        "shroud",
+        "timthetatman",
+        "jynxzi",
+        "caseoh_",
+        "hasanabi",
+        "ludwig",
+        "sodapoppin",
+        "mizkif",
+        "buddha",
+        "zackrawrr",
+        "sketch",
+        "jasontheween",
+        "stableronaldo",
+        "lacy",
+        "plaqueboymax",
+        "tarik",
+        "emiru",
+        "pokimane",
+        "extraemily",
+        "fanum",
+        "ohnepixel",
+        "cohhcarnage",
+        "quin69",
+        "esfandtv"
+      ],
+      "big_streamer_hours_utc": [
+        12,
+        20
       ]
     }
   }
