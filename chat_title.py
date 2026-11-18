@@ -44,7 +44,12 @@ def _normalize(msg):
     return " ".join(dedup).upper()[:60]
 
 
+LAUGH_RE = re.compile(r"^(K{3,}|(HA|AH|JA|HE|HI|XA)+H?|RS(RS)+|5{3,}|(WK)+W?|LO+L|LMF?A+O+|XD+)$")
+
+
 def _classify(norm):
+    if LAUGH_RE.match(norm.replace(" ", "")):
+        return "laugh"
     for name, group in (("laugh", LAUGH), ("wtf", WTF), ("win", WIN), ("loss", LOSS), ("hype", HYPE)):
         if norm in group or (norm.split() and norm.split()[0] in group and len(norm.split()) <= 2):
             return name
@@ -58,6 +63,8 @@ def _readable(raw_msg, norm):
     if not (1 <= len(words) <= 7) or len(norm) > 40 or (len(words) == 1 and len(norm) < 4):
         return False
     if any(EMOTE_LIKE.match(w) for w in raw_msg.split()):
+        return False
+    if len(set(norm.replace(" ", ""))) < 3 or not _latin_ok(norm):
         return False
     letters = sum(c.isalpha() for c in norm)
     return letters >= 0.6 * len(norm.replace(" ", ""))
@@ -165,3 +172,22 @@ def chat_hook(video):
     """video: candidate dict from twitch_finder. Returns (hook or None, n_messages)."""
     msgs = fetch_clip_chat(video.get("vod_id"), video.get("vod_offset"), video.get("duration"))
     return title_from_messages(msgs), len(msgs)
+
+
+GENERIC = ["Only in GTA 6", "GTA 6 is wild", "Wait for it...", "GTA 6 never misses", "This is GTA 6"]
+
+
+def _latin_ok(text):
+    letters = [c for c in text if c.isalpha()]
+    return bool(letters) and sum(c.isascii() for c in letters) >= 0.9 * len(letters)
+
+
+def pick_title(hook, clip_title):
+    """Chat hook first, else the Twitch clip title if it's clean English-looking text, else a generic hook."""
+    import random
+    if hook:
+        return hook
+    t = re.sub(r"\s+", " ", (clip_title or "")).strip()
+    if t and _latin_ok(t) and not BLOCK.search(t) and len(set(t.lower())) >= 4 and len(t) >= 6:
+        return t
+    return random.choice(GENERIC)

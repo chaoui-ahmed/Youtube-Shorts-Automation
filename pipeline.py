@@ -13,7 +13,7 @@ from downloader import download_video
 from audio_analyzer import analyze_audio
 from highlight_detector import get_highlights, get_full_clip_range
 from video_processor import process_video, process_compilation_video, get_video_duration
-from chat_title import chat_hook
+from chat_title import chat_hook, pick_title
 from ivy_edit import render as ivy_render
 from minecraft_captions import add_captions
 from metadata_generator import generate_metadata, generate_video_metadata
@@ -254,7 +254,7 @@ def run_channel_pipeline(channel, default_count=6, default_gap=2):
         if platform == "release":
             # GTA_IVY: title from chat + full-frame edit with hook and on-screen credit
             hook, n_msgs = chat_hook(video)
-            video['hook'] = hook
+            video['hook'] = pick_title(hook, video.get('title'))
             logging.info(f"[*] Chat: {n_msgs} messages -> hook: {hook!r}")
             try:
                 processed_path = ivy_render(
