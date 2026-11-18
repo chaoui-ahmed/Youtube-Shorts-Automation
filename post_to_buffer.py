@@ -18,7 +18,8 @@ API = "https://api.buffer.com"
 KEY = os.getenv("BUFFER_API_KEY", "").strip()
 TAG = os.getenv("RELEASE_TAG", "").strip()
 REPO = os.getenv("GITHUB_REPOSITORY", "").strip()
-SERVICES = [s.strip() for s in os.getenv("BUFFER_SERVICES", "youtube,tiktok").split(",") if s.strip()]
+SERVICES = [s.strip() for s in os.getenv("BUFFER_SERVICES", "youtube,tiktok,twitter").split(",") if s.strip()]
+ONLY_FILE = os.getenv("ONLY_FILE", "").strip()  # optional: post just this .mp4 name
 
 MUTATION = """
 mutation CreatePost($input: CreatePostInput!) {
@@ -57,6 +58,8 @@ def create(channel, text, video_url, title):
         "assets": [{"video": {"url": video_url}}],
     }
     tries = []
+    if channel["service"] == "twitter":
+        base = {**base, "mode": "shareNow"}
     if channel["service"] == "youtube":
         tries.append({**base, "metadata": {"youtube": {"title": title[:100], "privacy": "public", "categoryId": "20"}}})
         tries.append({**base, "metadata": {"youtube": {"title": title[:100]}}})
@@ -89,11 +92,17 @@ def main():
         meta = json.load(open(meta_path, encoding="utf-8"))
         name = os.path.basename(meta_path)[:-5] + ".mp4"
         url = f"https://github.com/{REPO}/releases/download/{TAG}/{name}"
+        if ONLY_FILE and name != ONLY_FILE:
+            continue
         title = meta.get("title") or "GTA 6 #shorts"
         text = f"{title}\n\n{meta.get('description', '')}".strip()
+        hook = title.replace(" | GTA 6 #shorts", "").strip()
+        streamer = meta.get("streamer") or ""
+        x_text = "\n".join([hook, ""] + ([f"🎥 twitch.tv/{streamer}"] if streamer else []) +
+                           ["#GTA6", "", "More GTA 6 clips: youtube.com/@GTA-ivy"])
         for c in targets:
             try:
-                pid = create(c, text, url, title)
+                pid = create(c, x_text if c["service"] == "twitter" else text, url, title)
                 print(f"[+] queued {name} on {c['service']} ({pid})")
             except Exception as e:
                 failures += 1

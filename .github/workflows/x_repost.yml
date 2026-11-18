@@ -1,0 +1,36 @@
+name: Post one existing Short on X (native video)
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag holding the Short'
+        required: true
+        type: string
+      file:
+        description: 'mp4 file name in that release'
+        required: true
+        type: string
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install requests
+      - name: Fetch metadata
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p out
+          gh release download "${{ inputs.tag }}" --pattern "${{ inputs.file }}" --pattern "$(basename '${{ inputs.file }}' .mp4).json" --dir out
+      - name: Post on X via Buffer
+        env:
+          BUFFER_API_KEY: ${{ secrets.BUFFER_API_KEY }}
+          RELEASE_TAG: ${{ inputs.tag }}
+          ONLY_FILE: ${{ inputs.file }}
+          BUFFER_SERVICES: twitter
+        run: python post_to_buffer.py
