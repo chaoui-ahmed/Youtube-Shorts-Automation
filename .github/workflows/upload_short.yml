@@ -77,10 +77,17 @@ jobs:
         run: |
           if ls out/*.mp4 >/dev/null 2>&1; then
             TAG="shorts-$(date -u +%Y%m%d-%H%M)-${{ github.run_id }}"
+            echo "RELEASE_TAG=$TAG" >> "$GITHUB_ENV"
             gh release create "$TAG" out/*.mp4 out/*.json --title "GTA_IVY Shorts $(date -u '+%Y-%m-%d %H:%M UTC')" --notes "Ready to post via Buffer. Credit is in each .json description."
           else
             echo "No new Shorts this run."
           fi
+
+      - name: Queue Shorts on YouTube + TikTok via Buffer
+        if: env.RELEASE_TAG != ''
+        env:
+          BUFFER_API_KEY: ${{ secrets.BUFFER_API_KEY }}
+        run: python post_to_buffer.py
 
       - name: Commit & Push Updated History (best-effort, retry on conflict)
         if: always()
