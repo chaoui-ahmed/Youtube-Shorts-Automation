@@ -97,6 +97,9 @@ def title_from_messages(messages):
         words = k.split()
         if n >= need and (len(words) >= 2 or n >= need + 2):
             phrase = display[k].most_common(1)[0][0]
+            # drop emote tokens glued into the phrase (KSILOL, OMEGALUL, xqcL...)
+            phrase = " ".join(w for w in phrase.split()
+                              if not (len(w) > 4 and re.search(r"(LOL|LUL|KEKW|POG|OMEGA|ICANT)", w))) or phrase
             phrase = re.sub(r"(.)\1{2,}", r"\1\1", phrase)  # KNIFEEEEE -> KNIFEE
             top_cls = classes.most_common(1)[0][0] if classes else ""
             emoji = {"laugh": " 😂", "wtf": " 💀", "win": " 🏆", "loss": " 💀", "hype": " 🔥"}.get(top_cls, "")
