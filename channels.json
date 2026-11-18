@@ -7,7 +7,7 @@
       "interval_hours": 1
     },
     "videos_per_run": 0,
-    "shorts_per_run": 3,
+    "shorts_per_run": 1,
     "use_bgm": false,
     "youtube_oauth_credentials": "data/channels/GTAIVY/token.json",
     "source_configuration": {
