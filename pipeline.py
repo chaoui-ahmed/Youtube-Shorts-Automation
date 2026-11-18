@@ -13,6 +13,8 @@ from downloader import download_video
 from audio_analyzer import analyze_audio
 from highlight_detector import get_highlights, get_full_clip_range
 from video_processor import process_video, process_compilation_video, get_video_duration
+from chat_title import chat_hook
+from ivy_edit import render as ivy_render
 from minecraft_captions import add_captions
 from metadata_generator import generate_metadata, generate_video_metadata
 from youtube_uploader import upload_short, upload_video, get_upload_count_today
