@@ -2,8 +2,8 @@ name: Scheduled Twitch to YouTube Shorts Automation
 
 on:
   schedule:
-    # Trigger ONCE daily at 03:30 UTC (09:00 AM IST — morning 5-10am window)
-    - cron: '30 0 * * *'
+    # GTA_IVY: every 2 hours
+    - cron: '0 */2 * * *'
   workflow_dispatch:
     inputs:
       channel:
@@ -23,7 +23,7 @@ jobs:
       fail-fast: false
       max-parallel: 4
       matrix:
-        channel: ${{ fromJSON(inputs.channel && format('["{0}"]', inputs.channel) || '["ExampleGamingChannel", "ExistingChannel", "GAMES", "MinecraftShorts", "MinecraftShorts2"]') }}
+        channel: ${{ fromJSON(inputs.channel && format('["{0}"]', inputs.channel) || '["GTAIVY"]') }}
     name: ${{ matrix.channel }}
     runs-on: ubuntu-latest
     timeout-minutes: 350
@@ -55,11 +55,7 @@ jobs:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           YOUTUBE_CLIENT_SECRET_JSON: ${{ secrets.YOUTUBE_CLIENT_SECRET_JSON }}
           # Channel dynamic tokens passed as environment variables:
-          YOUTUBE_TOKEN_JSON_EXISTINGCHANNEL: ${{ secrets.YOUTUBE_TOKEN_JSON_EXISTINGCHANNEL }}
-          YOUTUBE_TOKEN_JSON_EXAMPLEGAMINGCHANNEL: ${{ secrets.YOUTUBE_TOKEN_JSON_EXAMPLEGAMINGCHANNEL }}
-          YOUTUBE_TOKEN_JSON_GAMES: ${{ secrets.YOUTUBE_TOKEN_JSON_GAMES }}
-          YOUTUBE_TOKEN_JSON_MINECRAFTSHORTS: ${{ secrets.YOUTUBE_TOKEN_JSON_MINECRAFTSHORTS }}
-          YOUTUBE_TOKEN_JSON_MINECRAFTSHORTS2: ${{ secrets.YOUTUBE_TOKEN_JSON_MINECRAFTSHORTS2 }}
+          YOUTUBE_TOKEN_JSON_GTAIVY: ${{ secrets.YOUTUBE_TOKEN_JSON_GTAIVY }}
           # Facebook Page (Graph API) credentials for the FacebookGaming channel:
           FACEBOOK_PAGE_ID: ${{ secrets.FACEBOOK_PAGE_ID }}
           FACEBOOK_PAGE_ACCESS_TOKEN: ${{ secrets.FACEBOOK_PAGE_ACCESS_TOKEN }}

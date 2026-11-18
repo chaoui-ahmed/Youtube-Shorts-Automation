@@ -296,6 +296,15 @@ def run_channel_pipeline(channel, default_count=6, default_gap=2):
 
         # 6. Metadata Generation (Pass the dynamic Niche parameter!)
         metadata = generate_metadata(video['title'], niche=niche)
+        # GTA_IVY: always credit the streamer; use the real clip title when no AI key is set
+        streamer = (video.get('broadcaster_name') or '').strip()
+        if not config.GROQ_API_KEY:
+            base = (video.get('title') or 'GTA 6 moment').strip()[:70]
+            metadata['title'] = f"{base} | GTA 6 #shorts"
+            metadata['description'] = "GTA 6 clips, fast. Fan page, not affiliated with Rockstar Games.\n\n#GTA6 #GTAVI #ViceCity #shorts"
+            metadata['tags'] = "GTA 6,GTA VI,Vice City,Leonida,GTA 6 gameplay,shorts"
+        if streamer:
+            metadata['description'] = f"🎥 Clip: twitch.tv/{streamer}\n\n" + metadata.get('description', '')
         
         # 7. Calculate Scheduled Publish Time
         scheduled_time = base_publish_time + timedelta(hours=uploaded_count * interval_hours)
