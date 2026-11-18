@@ -249,13 +249,30 @@ def run_channel_pipeline(channel, default_count=6, default_gap=2):
         
         # 4. Process into YouTube Short (9:16 vertical 1080p) — defensive fallback
         out_filename = f"short_{video['video_id']}.mp4"
-        processed_path = process_video(
-            video_path,
-            scene['start'] if highlights and highlights[0] else 0,
-            scene['end'] if highlights and highlights[0] else (scene.get('duration', 60) if isinstance(scene, dict) else 60),
-            out_filename,
-            mute_original=mute_audio
-        )
+        if platform == "release":
+            # GTA_IVY: title from chat + full-frame edit with hook and on-screen credit
+            hook, n_msgs = chat_hook(video)
+            video['hook'] = hook
+            logging.info(f"[*] Chat: {n_msgs} messages -> hook: {hook!r}")
+            try:
+                processed_path = ivy_render(
+                    video_path,
+                    os.path.join(config.get_processed_dir(), out_filename),
+                    hook or video.get('title') or 'GTA 6',
+                    video.get('broadcaster_name', ''),
+                    duration=video.get('duration'),
+                )
+            except Exception as e:
+                logging.error(f"[!] GTA_IVY edit failed: {e}")
+                processed_path = None
+        else:
+            processed_path = process_video(
+                video_path,
+                scene['start'] if highlights and highlights[0] else 0,
+                scene['end'] if highlights and highlights[0] else (scene.get('duration', 60) if isinstance(scene, dict) else 60),
+                out_filename,
+                mute_original=mute_audio
+            )
 
         # Fallback: if process_video returns None/empty, copy original clip as placeholder
         if not processed_path or not os.path.exists(processed_path):
@@ -298,8 +315,8 @@ def run_channel_pipeline(channel, default_count=6, default_gap=2):
         metadata = generate_metadata(video['title'], niche=niche)
         # GTA_IVY: always credit the streamer; use the real clip title when no AI key is set
         streamer = (video.get('broadcaster_name') or '').strip()
-        if not config.GROQ_API_KEY:
-            base = (video.get('title') or 'GTA 6 moment').strip()[:70]
+        if not config.GROQ_API_KEY or video.get('hook'):
+            base = (video.get('hook') or video.get('title') or 'GTA 6 moment').strip()[:70]
             metadata['title'] = f"{base} | GTA 6 #shorts"
             metadata['description'] = "GTA 6 clips, fast. Fan page, not affiliated with Rockstar Games.\n\n#GTA6 #GTAVI #ViceCity #shorts"
             metadata['tags'] = "GTA 6,GTA VI,Vice City,Leonida,GTA 6 gameplay,shorts"

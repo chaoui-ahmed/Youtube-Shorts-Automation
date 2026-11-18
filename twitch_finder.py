@@ -105,6 +105,8 @@ def _collect_unseen(clips, seen, candidates, game_name):
             "game_name": game_name,
             "duration": clip.get("duration", 30),
             "broadcaster_name": clip.get("broadcaster_name", ""),
+            "vod_id": clip.get("video_id") or "",
+            "vod_offset": clip.get("vod_offset"),
         })
 
 
