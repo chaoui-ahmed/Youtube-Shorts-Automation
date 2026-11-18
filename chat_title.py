@@ -188,6 +188,8 @@ def pick_title(hook, clip_title):
     if hook:
         return hook
     t = re.sub(r"\s+", " ", (clip_title or "")).strip()
-    if t and _latin_ok(t) and not BLOCK.search(t) and len(set(t.lower())) >= 4 and len(t) >= 6:
+    stream_title = re.search(r"[|#]|!\w|https?:|\b(live|stream|directo|playthrough|marathon|day \d+|drops?|"
+                             r"spoilers?|giveaway|socials|sub|prime|en vivo|ao vivo|primer)\b", t, re.IGNORECASE)
+    if t and not stream_title and _latin_ok(t) and not BLOCK.search(t) and len(set(t.lower())) >= 4 and 6 <= len(t) <= 45:
         return t
     return random.choice(GENERIC)
