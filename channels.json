@@ -2,11 +2,12 @@
   {
     "channel_name": "GTAIVY",
     "niche": "GTA 6",
+    "platform": "release",
     "upload_schedule": {
       "interval_hours": 1
     },
     "videos_per_run": 0,
-    "shorts_per_run": 2,
+    "shorts_per_run": 3,
     "use_bgm": false,
     "youtube_oauth_credentials": "data/channels/GTAIVY/token.json",
     "source_configuration": {

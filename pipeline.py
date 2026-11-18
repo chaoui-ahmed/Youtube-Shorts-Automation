@@ -311,7 +311,30 @@ def run_channel_pipeline(channel, default_count=6, default_gap=2):
         
         # 8. Upload & Schedule the Short (YouTube OR Facebook, based on platform)
         try:
-            if platform == "facebook":
+            if platform == "release":
+                # GTA_IVY: save the finished Short + its metadata; the workflow publishes them
+                # as a GitHub Release and they get posted through Buffer (verified YouTube client).
+                import shutil
+                out_dir = os.path.join(config.BASE_DIR, "out")
+                os.makedirs(out_dir, exist_ok=True)
+                stem = f"{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M')}_{video['video_id']}"
+                shutil.copy(processed_path, os.path.join(out_dir, stem + ".mp4"))
+                with open(os.path.join(out_dir, stem + ".json"), "w", encoding="utf-8") as f:
+                    json.dump({
+                        "title": metadata.get("title"),
+                        "description": metadata.get("description"),
+                        "tags": metadata.get("tags"),
+                        "streamer": streamer,
+                        "clip_url": video.get("url"),
+                    }, f, ensure_ascii=False, indent=2)
+                uploaded_count += 1
+                uploads_info.append({
+                    "video_id": stem,
+                    "title": metadata['title'],
+                    "publish_time": datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.000Z')
+                })
+                logging.info(f"[+] ({uploaded_count}/{shorts_per_run}) Saved {stem}.mp4 for release")
+            elif platform == "facebook":
                 # Facebook-only channel: upload to the FB Page, never YouTube.
                 fb_id = upload_fb_video(
                     processed_path, metadata,
