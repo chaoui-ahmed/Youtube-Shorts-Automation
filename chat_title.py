@@ -55,7 +55,7 @@ def _readable(raw_msg, norm):
     if not norm or BLOCK.search(norm):
         return False
     words = norm.split()
-    if not (2 <= len(words) <= 7) or len(norm) > 40:
+    if not (1 <= len(words) <= 7) or len(norm) > 40 or (len(words) == 1 and len(norm) < 4):
         return False
     if any(EMOTE_LIKE.match(w) for w in raw_msg.split()):
         return False
@@ -63,39 +63,96 @@ def _readable(raw_msg, norm):
     return letters >= 0.6 * len(norm.replace(" ", ""))
 
 
+def _key(norm):
+    # "KILL THE TIGERRS" / "Kill the tiger" / "KNIFEEE" -> same bucket
+    k = re.sub(r"(.)\1+", r"\1", norm)
+    return re.sub(r"S\b", "", k)
+
+
 def title_from_messages(messages):
     """messages: list of raw chat strings. Returns a hook string or None."""
-    phrases, classes = Counter(), Counter()
+    buckets, display, classes = Counter(), {}, Counter()
+    total = 0
     for raw in messages:
         norm = _normalize(raw)
         if not norm:
             continue
+        total += 1
         cls = _classify(norm)
         if cls:
             classes[cls] += 1
         elif _readable(raw, norm):
-            phrases[norm] += 1
-    if phrases:
-        phrase, n = phrases.most_common(1)[0]
-        if n >= 3:
-            emoji = {"laugh": " 😂", "wtf": " 💀", "win": " 🏆", "loss": " 💀", "hype": " 🔥"}.get(
-                classes.most_common(1)[0][0] if classes else "", "")
+            k = _key(norm)
+            buckets[k] += 1
+            display.setdefault(k, Counter())[norm] += 1
+    need = max(2, int(0.05 * total))
+    for k, n in buckets.most_common():
+        words = k.split()
+        if n >= need and (len(words) >= 2 or n >= need + 2):
+            phrase = display[k].most_common(1)[0][0]
+            phrase = re.sub(r"(.)\1{2,}", r"\1\1", phrase)  # KNIFEEEEE -> KNIFEE
+            top_cls = classes.most_common(1)[0][0] if classes else ""
+            emoji = {"laugh": " 😂", "wtf": " 💀", "win": " 🏆", "loss": " 💀", "hype": " 🔥"}.get(top_cls, "")
             return phrase + emoji
     if classes:
         cls, n = classes.most_common(1)[0]
-        if n >= 5:
+        if n >= max(3, int(0.1 * total)):
             return TEMPLATES[cls]
     return None
+
+
+GQL = "https://gql.twitch.tv/gql"
+GQL_CLIENT_ID = "kimne78kx3ncx6brgo4mv6wki5h1ko"  # Twitch web player's public client id
+COMMENTS_HASH = "b70a3591ff0f4e0313d126c6a1502d79a1c02baebb288227c582044aa76adf6a"
+
+
+def _gql_comments(vod_id, start, end, max_pages=15):
+    import requests
+    out, cursor = [], None
+    for _ in range(max_pages):
+        variables = {"videoID": str(vod_id)}
+        if cursor:
+            variables["cursor"] = cursor
+        else:
+            variables["contentOffsetSeconds"] = start
+        body = [{"operationName": "VideoCommentsByOffsetOrCursor", "variables": variables,
+                 "extensions": {"persistedQuery": {"version": 1, "sha256Hash": COMMENTS_HASH}}}]
+        r = requests.post(GQL, json=body, headers={"Client-Id": GQL_CLIENT_ID}, timeout=15)
+        r.raise_for_status()
+        comments = (((r.json()[0].get("data") or {}).get("video") or {}).get("comments")) or {}
+        edges = comments.get("edges") or []
+        if not edges:
+            break
+        for e in edges:
+            node = e.get("node") or {}
+            t = node.get("contentOffsetSeconds", 0)
+            if t > end:
+                return out
+            if t >= start:
+                frags = ((node.get("message") or {}).get("fragments")) or []
+                out.append("".join(f.get("text", "") for f in frags))
+        if not (comments.get("pageInfo") or {}).get("hasNextPage"):
+            break
+        cursor = edges[-1].get("cursor")
+        if not cursor:
+            break
+    return out
 
 
 def fetch_clip_chat(vod_id, vod_offset, duration, max_messages=3000):
     """Chat messages sent during the clip (+8s for reactions). Empty list on any problem."""
     if not vod_id or vod_offset is None:
         return []
+    start = max(0, int(vod_offset))
+    end = start + int(duration or 30) + 8
+    try:
+        msgs = _gql_comments(vod_id, start, end)
+        if msgs:
+            return msgs[:max_messages]
+    except Exception as e:
+        logging.warning(f"[-] Twitch GQL chat failed for VOD {vod_id}: {e}")
     try:
         from chat_downloader import ChatDownloader
-        start = max(0, int(vod_offset))
-        end = start + int(duration or 30) + 8
         chat = ChatDownloader().get_chat(f"https://www.twitch.tv/videos/{vod_id}",
                                          start_time=start, end_time=end, max_messages=max_messages)
         return [m.get("message", "") for m in chat if m.get("message")]
