@@ -153,11 +153,11 @@ def find_twitch_clips(target_games=None):
     # (None, None) keeps the original plain-trending behaviour as a fallback.
     now = datetime.now(timezone.utc)
     windows = []
-    for h in range(0, 48, 2):  # 2h steps, ~2 days back
+    for h in range(0, 24, 2):  # GTA_IVY: fresh only, last 24h
         end = now - timedelta(hours=h)
         start = end - timedelta(hours=2)
         windows.append((start, end))
-    windows.append((None, None))
+    # GTA_IVY: no all-time 'trending' fallback, keep it fresh
 
     for game_name in games:
         logging.info(f"[*] Searching Twitch for category: '{game_name}'...")
@@ -201,7 +201,7 @@ def find_twitch_clips(target_games=None):
     return candidates
 
 
-def find_big_streamer_clips(logins, game_name="Grand Theft Auto VI", hours=48):
+def find_big_streamer_clips(logins, game_name="Grand Theft Auto VI", hours=24):
     """GTA_IVY: most-viewed unseen GTA 6 clips from a list of well-known streamers (last `hours`)."""
     token = get_twitch_access_token()
     if not token or not logins:

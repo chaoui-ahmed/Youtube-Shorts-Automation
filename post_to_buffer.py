@@ -54,7 +54,8 @@ def create(channel, text, video_url, title):
         "text": text,
         "channelId": channel["id"],
         "schedulingType": "automatic",
-        "mode": "addToQueue",
+        # fresh Short goes to the NEXT slot, ahead of any older backlog
+        "mode": os.getenv("QUEUE_MODE", "shareNext"),
         "assets": [{"video": {"url": video_url}}],
     }
     tries = []
@@ -66,6 +67,7 @@ def create(channel, text, video_url, title):
     elif channel["service"] == "tiktok":
         tries.append({**base, "metadata": {"tiktok": {"title": title[:90]}}})
     tries.append(base)
+    tries.append({**base, "mode": "addToQueue"})  # fallback if shareNext isn't accepted
     last = None
     for inp in tries:
         try:
