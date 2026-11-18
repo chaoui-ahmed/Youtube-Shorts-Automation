@@ -91,11 +91,19 @@ def get_game_id(game_name, headers):
         logging.warning(f"[!] Could not resolve game ID for '{game_name}': {e}")
     return None
 
+# GTA_IVY: skip sexual / shock clips (age-restriction & demonetisation risk on YouTube and TikTok)
+import re as _re
+_NSFW = _re.compile(r"strip|private dance|lap ?dance|twerk|gyat|thirst|booty|nsfw|sex|naked|nude|boob|tits|"
+                    r"onlyfans|hooker|prostitut|escort|bikini|thong|gore|suicide", _re.IGNORECASE)
+
+
 def _collect_unseen(clips, seen, candidates, game_name):
     """Append clips whose id is not yet seen (helper for both query modes)."""
     for clip in clips:
         clip_id = clip.get("id")
         if not clip_id or clip_id in seen:
+            continue
+        if _NSFW.search(clip.get("title") or ""):
             continue
         candidates.append({
             "video_id": clip_id,
