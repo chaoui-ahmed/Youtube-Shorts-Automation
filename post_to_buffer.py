@@ -59,7 +59,7 @@ def create(channel, text, video_url, title):
     }
     tries = []
     if channel["service"] == "twitter":
-        base = {**base, "mode": "shareNow"}
+        base = {**base, "mode": os.getenv("X_MODE", "shareNow")}
     if channel["service"] == "youtube":
         tries.append({**base, "metadata": {"youtube": {"title": title[:100], "privacy": "public", "categoryId": "20"}}})
         tries.append({**base, "metadata": {"youtube": {"title": title[:100]}}})
@@ -93,6 +93,8 @@ def main():
         name = os.path.basename(meta_path)[:-5] + ".mp4"
         url = f"https://github.com/{REPO}/releases/download/{TAG}/{name}"
         if ONLY_FILE and name != ONLY_FILE:
+            continue
+        if name in os.getenv("SKIP_FILES", "").split():
             continue
         title = meta.get("title") or "GTA 6 #shorts"
         text = f"{title}\n\n{meta.get('description', '')}".strip()

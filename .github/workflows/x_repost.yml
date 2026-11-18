@@ -1,15 +1,21 @@
-name: Post one existing Short on X (native video)
+name: Post existing Shorts on X (native video)
 
 on:
   workflow_dispatch:
     inputs:
-      tag:
-        description: 'Release tag holding the Short'
+      tags:
+        description: 'Release tags (space-separated)'
         required: true
         type: string
-      file:
-        description: 'mp4 file name in that release'
-        required: true
+      skip:
+        description: 'mp4 names to skip (space-separated)'
+        required: false
+        default: ''
+        type: string
+      x_mode:
+        description: 'shareNow or addToQueue'
+        required: false
+        default: 'addToQueue'
         type: string
 
 jobs:
@@ -21,16 +27,16 @@ jobs:
         with:
           python-version: '3.11'
       - run: pip install requests
-      - name: Fetch metadata
+      - name: Post each release's Shorts on X via Buffer
         env:
           GH_TOKEN: ${{ github.token }}
-        run: |
-          mkdir -p out
-          gh release download "${{ inputs.tag }}" --pattern "${{ inputs.file }}" --pattern "$(basename '${{ inputs.file }}' .mp4).json" --dir out
-      - name: Post on X via Buffer
-        env:
           BUFFER_API_KEY: ${{ secrets.BUFFER_API_KEY }}
-          RELEASE_TAG: ${{ inputs.tag }}
-          ONLY_FILE: ${{ inputs.file }}
           BUFFER_SERVICES: twitter
-        run: python post_to_buffer.py
+          X_MODE: ${{ inputs.x_mode }}
+          SKIP_FILES: ${{ inputs.skip }}
+        run: |
+          for TAG in ${{ inputs.tags }}; do
+            rm -rf out && mkdir out
+            gh release download "$TAG" --pattern "*.json" --dir out
+            RELEASE_TAG="$TAG" python post_to_buffer.py
+          done
