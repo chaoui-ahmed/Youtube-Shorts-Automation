@@ -2,8 +2,8 @@ name: Scheduled Twitch to YouTube Shorts Automation
 
 on:
   schedule:
-    # GTA_IVY: 1 Short every 6 hours = 4/day (matches the 4 Buffer slots)
-    - cron: '30 */6 * * *'
+    # GTA_IVY: 1 Short 30 min before each Buffer slot (9:00, 13:00, 17:00, 21:00 Dublin)
+    - cron: '30 8,12,16,20 * * *'
   workflow_dispatch:
     inputs:
       channel:
