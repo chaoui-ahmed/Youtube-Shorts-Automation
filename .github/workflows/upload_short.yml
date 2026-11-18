@@ -96,13 +96,20 @@ jobs:
           BUFFER_API_KEY: ${{ secrets.BUFFER_API_KEY }}
         run: python post_to_buffer.py
 
+      - name: Post new YouTube Shorts on X (link card)
+        if: always()
+        env:
+          BUFFER_API_KEY: ${{ secrets.BUFFER_API_KEY }}
+          YOUTUBE_CHANNEL_ID: ${{ vars.YOUTUBE_CHANNEL_ID }}
+        run: python tweet_youtube.py || true
+
       - name: Commit & Push Updated History (best-effort, retry on conflict)
         if: always()
         run: |
           git config user.email "actions@github.com"
           git config user.name "github-actions[bot]"
           for i in 1 2 3 4 5; do
-            find data/channels -type f \( -name "seen_videos.txt" -o -name "upload_log.json" \) -exec git add {} +
+            find data/channels -type f \( -name "seen_videos.txt" -o -name "upload_log.json" -o -name "tweeted_youtube.txt" \) -exec git add {} +
             if git diff --cached --quiet; then
               echo "No history changes for ${{ matrix.channel }}"
               break
