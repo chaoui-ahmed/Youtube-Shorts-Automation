@@ -170,6 +170,7 @@ def build():
         "streamer": "",
         "clip_url": "",
         "duration": round(length, 1),
+        "clip_ids": [c["video_id"] for c in used],
     }
     with open(out[:-4] + ".json", "w", encoding="utf-8") as f:
         json.dump(meta, f, ensure_ascii=False, indent=2)

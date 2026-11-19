@@ -1,4 +1,4 @@
-name: Post existing Shorts on X (native video)
+name: Re-post existing release videos via Buffer
 
 on:
   workflow_dispatch:
@@ -11,6 +11,11 @@ on:
         description: 'mp4 names to skip (space-separated)'
         required: false
         default: ''
+        type: string
+      services:
+        description: 'Buffer services (comma-separated)'
+        required: false
+        default: 'twitter'
         type: string
       x_mode:
         description: 'shareNow or addToQueue'
@@ -31,7 +36,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           BUFFER_API_KEY: ${{ secrets.BUFFER_API_KEY }}
-          BUFFER_SERVICES: twitter
+          BUFFER_SERVICES: ${{ inputs.services }}
+          QUEUE_MODE: shareNow
           X_MODE: ${{ inputs.x_mode }}
           SKIP_FILES: ${{ inputs.skip }}
         run: |
