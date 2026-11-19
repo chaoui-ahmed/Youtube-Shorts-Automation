@@ -90,9 +90,10 @@ jobs:
             echo "No new Shorts this run."
           fi
 
-      - name: Queue Shorts on YouTube + TikTok via Buffer
+      - name: Queue Shorts on YouTube + X via Buffer (TikTok gets the daily compilation instead)
         if: env.RELEASE_TAG != ''
         env:
+          BUFFER_SERVICES: youtube,twitter
           BUFFER_API_KEY: ${{ secrets.BUFFER_API_KEY }}
         run: python post_to_buffer.py
 
