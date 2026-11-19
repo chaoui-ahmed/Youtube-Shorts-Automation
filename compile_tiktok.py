@@ -40,21 +40,35 @@ def duration(path):
     return float(out or 0)
 
 
-async def _edge(text, path):
-    import edge_tts
-    await edge_tts.Communicate(text, VOICE, rate="+8%").save(path)
+PIPER_VOICE = os.getenv("PIPER_VOICE", "en_US-ryan-high")
+PIPER_BASE = "https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/{spk}/{q}/{v}"
+
+
+def _piper_model():
+    import requests
+    d = os.path.join("data", "piper_voices")
+    os.makedirs(d, exist_ok=True)
+    spk, q = PIPER_VOICE.split("-")[1], PIPER_VOICE.split("-")[2]
+    model = os.path.join(d, PIPER_VOICE + ".onnx")
+    for name in (PIPER_VOICE + ".onnx", PIPER_VOICE + ".onnx.json"):
+        path = os.path.join(d, name)
+        if not os.path.exists(path):
+            r = requests.get(PIPER_BASE.format(spk=spk, q=q, v=name), timeout=180)
+            r.raise_for_status()
+            open(path, "wb").write(r.content)
+    return model
 
 
 def tts(text, path):
-    """AI voice: Microsoft Edge neural TTS (free, no key); falls back to espeak-ng."""
-    try:
-        asyncio.run(_edge(text, path))
-        if os.path.getsize(path) > 1000:
-            return path
-    except Exception as e:
-        logging.warning(f"edge-tts failed ({e}), using espeak-ng")
+    """AI voice: Piper neural TTS (offline, free). Falls back to espeak-ng only if Piper fails."""
     wav = path.rsplit(".", 1)[0] + ".wav"
-    run(["espeak-ng", "-v", "en-us", "-s", "165", "-w", wav, text])
+    try:
+        model = _piper_model()
+        subprocess.run(["python", "-m", "piper", "-m", model, "-f", wav, "--length-scale", "0.92"],
+                       input=text, text=True, check=True, capture_output=True)
+    except Exception as e:
+        logging.warning(f"Piper failed ({e}), using espeak-ng")
+        run(["espeak-ng", "-v", "en-us", "-s", "165", "-w", wav, text])
     run(["ffmpeg", "-y", "-loglevel", "error", "-i", wav, path])
     return path
 
@@ -123,10 +137,10 @@ def build():
         trimmed = os.path.join(work, f"trim_{i}.mp4")
         run(["ffmpeg", "-y", "-loglevel", "error", "-ss", f"{start:.2f}", "-i", src, "-t", f"{seg_len:.2f}",
              "-c:v", "libx264", "-preset", "veryfast", "-crf", "18", "-c:a", "aac", trimmed])
-        framed = ivy_render(trimmed, os.path.join(work, f"framed_{i}.mp4"), f"#{rank} {c['hook']}", streamer,
+        framed = ivy_render(trimmed, os.path.join(work, f"framed_{i}.mp4"), f"#{rank} {streamer}".strip(), streamer,
                             duration=seg_len)
         intro = f"Top {WORDS.get(total, total)} GTA 6 moments today. " if i == 0 else ""
-        voice = tts(f"{intro}Number {WORDS.get(rank, rank)}. {spoken(c['hook'], streamer)}",
+        voice = tts(f"{intro}Number {WORDS.get(rank, rank)}. {streamer}." if streamer else f"{intro}Number {WORDS.get(rank, rank)}.",
                     os.path.join(work, f"voice_{i}.mp3"))
         vd = duration(voice)
         seg = os.path.join(work, f"seg_{i}.mp4")
