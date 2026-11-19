@@ -5,6 +5,12 @@ on:
     # 12:00 and 19:00 Dublin (winter = UTC)
     - cron: '20 11,18 * * *'
   workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Build only, do not post (any value)'
+        required: false
+        default: ''
+        type: string
 
 permissions:
   contents: write
@@ -45,14 +51,14 @@ jobs:
             gh release create "$TAG" out/*.mp4 out/*.json --title "GTA_IVY TikTok compilation $(date -u '+%Y-%m-%d %H:%M UTC')" --notes "Top 5 compilation for TikTok."
           fi
       - name: Queue on TikTok via Buffer
-        if: env.RELEASE_TAG != ''
+        if: env.RELEASE_TAG != '' && inputs.dry_run == ''
         env:
           BUFFER_API_KEY: ${{ secrets.BUFFER_API_KEY }}
           BUFFER_SERVICES: tiktok
           QUEUE_MODE: shareNow
         run: python post_to_buffer.py
       - name: Save state
-        if: always()
+        if: always() && inputs.dry_run == ''
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
