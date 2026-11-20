@@ -14,6 +14,7 @@ from audio_analyzer import analyze_audio
 from highlight_detector import get_highlights, get_full_clip_range
 from video_processor import process_video, process_compilation_video, get_video_duration
 from chat_title import chat_hook, pick_title
+from nsfw_check import is_nsfw
 from ivy_edit import render as ivy_render
 from minecraft_captions import add_captions
 from metadata_generator import generate_metadata, generate_video_metadata
@@ -221,6 +222,9 @@ def run_channel_pipeline(channel, default_count=6, default_gap=2):
         video_path = None
         if source_type == "twitch":
             video_path = download_twitch_clip(video)
+            if video_path and os.path.exists(video_path) and is_nsfw(video_path):
+                mark_twitch_seen(video['video_id'])
+                continue
         else:
             video_path = download_video(video['video_id'])
             
