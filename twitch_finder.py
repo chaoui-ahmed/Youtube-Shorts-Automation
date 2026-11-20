@@ -94,7 +94,7 @@ def get_game_id(game_name, headers):
 # GTA_IVY: skip sexual / shock clips (age-restriction & demonetisation risk on YouTube and TikTok)
 import re as _re
 _NSFW = _re.compile(r"strip|private dance|lap ?dance|twerk|gyat|thirst|booty|nsfw|sex|naked|nude|boob|tits|"
-                    r"onlyfans|hooker|prostitut|escort|bikini|thong|gore|suicide", _re.IGNORECASE)
+                    r"onlyfans|hooker|prostitut|escort|bikini|thong|gore|suicide|club|dancer|vanilla|unicorn|lap|booth|wife|girl|baddie|rizz|date", _re.IGNORECASE)
 
 
 def _collect_unseen(clips, seen, candidates, game_name):
