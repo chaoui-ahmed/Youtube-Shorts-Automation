@@ -62,7 +62,7 @@ def main():
     cfg = json.load(open("channels.json"))[0]["source_configuration"]
     pool = find_big_streamer_clips(cfg.get("big_streamers") or []) or find_twitch_clips(["Grand Theft Auto VI"])
     pool = [c for c in pool if c["video_id"] not in done]
-    for clip in pool[:6]:
+    for clip in pool[:15]:
         src = download_twitch_clip(clip)
         if not src or not os.path.exists(src):
             continue
@@ -70,7 +70,10 @@ def main():
         text = headline(clip, hook)
         stamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M")
         out = os.path.join("out", f"tiktok_news_{stamp}_{clip['video_id'][:20]}.mp4")
-        _, has_cam = render(src, out, text, clip.get("broadcaster_name", ""))
+        path, has_cam = render(src, out, text, clip.get("broadcaster_name", ""))
+        if not path:
+            logging.info(f"No facecam in {clip['video_id']}, trying the next clip")
+            continue
         logging.info(f"News clip: {out} | facecam={has_cam} | {text}")
         streamer = clip.get("broadcaster_name", "")
         meta = {

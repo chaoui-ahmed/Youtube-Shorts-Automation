@@ -4,7 +4,7 @@ GTA_IVY TikTok "news" layout (the format big gaming-news pages use):
   bottom half = the streamer's facecam, zoomed in (found with face detection)
   middle      = white rounded headline box with bold black text that tells the story
   bottom      = small "clip: twitch.tv/<streamer>" credit
-Falls back to full-frame gameplay on a blurred background when there is no facecam.
+Clips without a detectable facecam are skipped (no blurred-background fallback).
 """
 import os
 import subprocess
@@ -96,23 +96,20 @@ def render(src, out_path, headline, streamer, max_seconds=59):
     font = FONT.replace(":", r"\:")
     credit_file = work + "_credit.txt"
     open(credit_file, "w").write(credit)
-    if cam:
-        cx, cy, cw, ch = cam
-        graph = (
-            # top: gameplay zoomed to fill 1080x960
-            f"[0:v]scale=-2:{HALF}:flags=lanczos,crop={W}:{HALF},eq=contrast=1.05:saturation=1.1[top];"
-            # bottom: facecam zoomed to fill 1080x960
-            f"[0:v]crop={cw}:{ch}:{cx}:{cy},scale={W}:{HALF}:flags=lanczos[bot];"
-            "[top][bot]vstack[stack];"
-        )
-        box_y = HALF - bh // 2
-    else:
-        graph = (
-            "[0:v]split=2[bgs][fgs];"
-            f"[bgs]scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H},boxblur=22:2[bg];"
-            f"[fgs]scale={W}:-2:flags=lanczos[fg];[bg][fg]overlay=(W-w)/2:(H-h)/2[stack];"
-        )
-        box_y = int(H / 2 - (W * sh / sw) / 2 - bh - 30)
+    if not cam:
+        # no webcam found: skip this clip (no blurred-background fallback, it gets flagged)
+        for f in (png, credit_file):
+            os.remove(f)
+        return None, False
+    cx, cy, cw, ch = cam
+    graph = (
+        # top: gameplay zoomed to fill 1080x960
+        f"[0:v]scale=-2:{HALF}:flags=lanczos,crop={W}:{HALF},eq=contrast=1.05:saturation=1.1[top];"
+        # bottom: facecam zoomed to fill 1080x960
+        f"[0:v]crop={cw}:{ch}:{cx}:{cy},scale={W}:{HALF}:flags=lanczos[bot];"
+        "[top][bot]vstack[stack];"
+    )
+    box_y = HALF - bh // 2
     graph += (
         f"[stack][1:v]overlay=(W-w)/2:{box_y},"
         f"drawtext=fontfile='{font}':textfile='{credit_file}':fontsize=38:fontcolor=white:"
