@@ -13,7 +13,8 @@ from datetime import datetime, timezone
 import requests
 
 import config
-from chat_title import chat_hook
+from chat_title import chat_hook, fetch_clip_chat
+from twitch_finder import _NSFW
 from news_edit import render
 from twitch_downloader import download_twitch_clip
 from twitch_finder import find_big_streamer_clips, find_twitch_clips, get_twitch_access_token
@@ -65,6 +66,10 @@ def main():
     for clip in pool[:15]:
         src = download_twitch_clip(clip)
         if not src or not os.path.exists(src):
+            continue
+        msgs = fetch_clip_chat(clip.get("vod_id"), clip.get("vod_offset"), clip.get("duration"))
+        if sum(1 for m in msgs if _NSFW.search(m) or re.search(r"🍑|🥵|🤤|😩|thicc|mommy|cake", m, re.I)) >= 3:
+            logging.info(f"Chat suggests adult content in {clip['video_id']}, skipping")
             continue
         hook, n = chat_hook(clip)
         text = headline(clip, hook)
