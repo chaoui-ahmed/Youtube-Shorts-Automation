@@ -4,12 +4,12 @@ import os
 import subprocess
 import tempfile
 
-EXPLICIT = {"FEMALE_BREAST_EXPOSED": 0.40, "FEMALE_GENITALIA_EXPOSED": 0.35, "MALE_GENITALIA_EXPOSED": 0.35,
-            "ANUS_EXPOSED": 0.35, "BUTTOCKS_EXPOSED": 0.50}
+EXPLICIT = {"FEMALE_BREAST_EXPOSED": 0.30, "FEMALE_GENITALIA_EXPOSED": 0.25, "MALE_GENITALIA_EXPOSED": 0.25,
+            "ANUS_EXPOSED": 0.25, "BUTTOCKS_EXPOSED": 0.20}
 _detector = None
 
 
-def is_nsfw(video_path, samples=12):
+def is_nsfw(video_path, samples=20):
     global _detector
     try:
         from nudenet import NudeDetector
